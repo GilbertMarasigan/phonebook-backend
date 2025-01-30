@@ -4,9 +4,9 @@ const app = express()
 
 app.use(express.json())
 
-app.use(morgan('combined'))
-//  app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
-// app.use(morgan('tiny'))
+morgan.token('body', (req) => JSON.stringify(req.body))
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 let persons = [
     { 
@@ -65,7 +65,7 @@ const generateId = () => {
 
 const checkForDuplicateName = (name) => {
   const match = persons.filter((person) => person.name == name )
-  console.log('match', match.length)
+
   return match.length > 0 ? true : false
 }
 
@@ -100,6 +100,7 @@ app.post('/api/persons', (request, response) => {
 
   persons = persons.concat(person)
 
+
   response.json(person)
 
 })
@@ -108,6 +109,9 @@ const unknownEndpoint = (request, response) => {
   //console.log('request', request)
   response.status(404).send({ error: 'unknown endpoint'})
 }
+
+
+
 
 app.use(unknownEndpoint)
 
