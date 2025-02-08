@@ -9,8 +9,11 @@ const Person = require('./models/person')
 const errorHandler = (error, request, response, next) => {
   console.log(error.message)
 
-  if(error.name === 'CastError'){
-    return response.status(400).send({ error: 'malformatted id'})
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+  else if(error.name === 'ValidationError'){
+    return response.status(400).json({ error: error.message})
   }
 
   next(error)
@@ -38,10 +41,10 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 app.get('/info', (request, response) => {
-  
+
   const currentDateAndTime = new Date()
   const message = `<p>Phonebook has info for ${persons.length} people</p><p>${currentDateAndTime}</p>`
-  console.log('currentDateAndTime', )
+  console.log('currentDateAndTime',)
   response.send(message)
 })
 
@@ -54,56 +57,61 @@ app.delete('/api/persons/:id', (request, response) => {
 })
 
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
 
   const body = request.body
 
   console.log('body', body)
 
-  if(!body.name || !body.number) {
+  if (!body.name || !body.number) {
     return response.status(400).json({
       error: !body.name ? 'content name missing' : 'content number missing'
     })
   }
-
 
   const person = new Person({
     name: body.name,
     number: body.number
   })
 
-  person.save().then(savedPerson => {
+  person.save()
+  .then(savedPerson => {
     response.json(savedPerson)
   })
+    .catch(error => next(error))
 
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
 
-  const body = request.body
+  const { content, important } = request.body
 
   console.log('body', body)
 
-  if(!body.name || !body.number) {
+  if (!body.name || !body.number) {
     return response.status(400).json({
       error: !body.name ? 'content name missing' : 'content number missing'
     })
   }
 
-  Person.findByIdAndUpdate(request.params.id, body, { new: true}).then(person => {
+  Person.findByIdAndUpdate(
+    request.params.id, 
+    { content, important }, 
+    { new: true, runValidators: true, context: 'query' }
+  ).then(person => {
     response.json(person)
-    if(!person){
-      return response.status(404).json({error: 'person not found'})
+    if (!person) {
+      return response.status(404).json({ error: 'person not found' })
     }
     response.status(200).end()
-  }) 
-  .catch(error => next(error))
+  })
+    .catch(error => next(error))
 
 })
 
 const unknownEndpoint = (request, response) => {
   //console.log('request', request)
-  response.status(404).send({ error: 'unknown endpoint'})
+  response.status(404).send({ error: 'unknown endpoint' })
 }
 
 
@@ -113,5 +121,5 @@ app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
