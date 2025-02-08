@@ -1,7 +1,10 @@
+require('dotenv').config()
+
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+const Person = require('./models/person')
 
 app.use(express.json())
 app.use(cors())
@@ -36,14 +39,15 @@ let persons = [
 
 
 app.get('/api/persons', (request, response) => {
+  Person.find({}).then(persons => {
     response.json(persons)
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  const person = persons.find(person => person.id === id)
-
-  person ? response.json(person) : response.status(404).end()
+  Person.findById(request.params.id).then(person => {
+    response.json(person)
+  })
 })
 
 app.get('/info', (request, response) => {
@@ -84,6 +88,8 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
+  /*
+
   console.log('checkForDuplicateName()', checkForDuplicateName(body.name))
 
   if(checkForDuplicateName(body.name)){
@@ -91,20 +97,17 @@ app.post('/api/persons', (request, response) => {
       error: 'name must be unique'
     })
   }
+  */
 
 
-  const person = {
-    id: generateId(),
+  const person = new Person({
     name: body.name,
     number: body.number
-  }
+  })
 
-  console.log('person', person)
-
-  persons = persons.concat(person)
-
-
-  response.json(person)
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
 
 })
 
@@ -112,8 +115,6 @@ const unknownEndpoint = (request, response) => {
   //console.log('request', request)
   response.status(404).send({ error: 'unknown endpoint'})
 }
-
-
 
 
 app.use(unknownEndpoint)
