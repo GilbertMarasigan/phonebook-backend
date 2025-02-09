@@ -84,29 +84,25 @@ app.post('/api/persons', (request, response, next) => {
 
 app.put('/api/persons/:id', (request, response, next) => {
 
-  const { content, important } = request.body
+  const { name, number } = request.body
 
-  console.log('body', body)
-
-  if (!body.name || !body.number) {
+  if (!name || !number) {
     return response.status(400).json({
-      error: !body.name ? 'content name missing' : 'content number missing'
+      error: !name ? 'content name missing' : 'content number missing'
     })
   }
 
   Person.findByIdAndUpdate(
     request.params.id, 
-    { content, important }, 
+    { name, number }, 
     { new: true, runValidators: true, context: 'query' }
   ).then(person => {
-    response.json(person)
     if (!person) {
       return response.status(404).json({ error: 'person not found' })
     }
-    response.status(200).end()
+    response.json(person)
   })
     .catch(error => next(error))
-
 })
 
 const unknownEndpoint = (request, response) => {
